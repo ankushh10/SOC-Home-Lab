@@ -3,7 +3,7 @@
 **Date:** 2025-12-11
 **Severity:** High (Level 10)
 **Status:** Resolved (Simulation)
-**Analyst:** [Your Name]
+**Analyst:** Ankush Chakraborty
 
 ## 1. Executive Summary
 An internal red-team simulation was conducted to test the detection capabilities of the SOC stack. A brute-force authentication attack was launched against an Azure Linux instance (`Azure-VM`) via the Tailscale overlay network. The SIEM (Wazuh) successfully correlated 40+ failed login attempts into a high-severity alert.
