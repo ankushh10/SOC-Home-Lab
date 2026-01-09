@@ -28,7 +28,6 @@ A dedicated IAM user **`wazuh-log-collector`** was created with read-only access
 
 #### IAM Policy: `Read_WazuhS3Bucket`
 
-```json
 {
   "Version": "2012-10-17",
   "Statement": [
