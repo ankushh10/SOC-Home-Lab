@@ -1,151 +1,103 @@
-☁️ AWS Cloud Security & Threat Hunting
-CloudTrail → Wazuh SOC Integration
-📌 Project Overview
+# ☁️ AWS Cloud Security & Threat Hunting (Wazuh Integration)
 
-This project demonstrates a Hybrid Cloud SOC (Security Operations Center) implementation by integrating AWS CloudTrail with Wazuh.
+## 📌 Project Overview
+This project demonstrates the implementation of a **Hybrid Cloud SOC** (Security Operations Center) by integrating **AWS CloudTrail** with **Wazuh**. The goal was to monitor cloud infrastructure for identity attacks, unauthorized resource usage, and defense evasion attempts in real-time.
 
-The goal is to detect and respond to:
+### 🏗️ Architecture
+* **Log Source:** AWS CloudTrail (Management Events) monitoring `us-east-1` (N. Virginia).
+* **Storage:** AWS S3 Bucket (JSON formatted logs).
+* **Ingestion:** Wazuh Manager (Python Boto3 Module/Docker).
+* **Visualization:** Custom Kibana/OpenSearch Dashboards.
 
-Identity-based attacks
+---
 
-Unauthorized cloud resource usage
+## 🛡️ Implementation Details
 
-Defense evasion and logging tampering
+### 1. Least Privilege IAM Policy
+To ensure security best practices, I avoided using Admin keys. Instead, I created a custom IAM user (`wazuh-log-collector`) with a restricted policy that only allows reading from the specific logging bucket.
 
-The lab simulates real-world adversary behavior and validates detections end-to-end.
+**Policy: `Read_WazuhS3Bucket`**
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "WazuhBucketListing",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::<YOUR_BUCKET_NAME>"
+        },
+        {
+            "Sid": "WazuhLogReading",
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::<YOUR_BUCKET_NAME>/*"
+        }
+    ]
+}
+```
 
-🏗️ Architecture
+### 2. Wazuh Configuration
+Configured the Wazuh Manager (running in Docker) to ingest logs via the AWS S3 module.
 
-Log Source: AWS CloudTrail (Management Events)
-
-AWS Region: us-east-1 (N. Virginia)
-
-Log Storage: Amazon S3 (JSON logs)
-
-Log Ingestion: Wazuh Manager (Docker + AWS S3 module)
-
-Visualization: Kibana / OpenSearch Dashboards
-
-📁 Repository Structure
-aws-wazuh-threat-hunting/
-├── README.md
-├── iam/
-│   └── Read_WazuhS3Bucket.json
-├── wazuh/
-│   └── ossec.conf
-└── screenshots/
-    ├── dashboard.png
-    └── console-login-failure.png
-
-🛡️ Implementation Details
-1️⃣ Least Privilege IAM Design
-
-To follow security best practices, no admin credentials were used.
-
-A dedicated IAM user named wazuh-log-collector was created with read-only access to the CloudTrail S3 bucket.
-
-IAM Policy Location:
-iam/Read_WazuhS3Bucket.json
-
-Policy Purpose:
-
-Allow listing the CloudTrail bucket
-
-Allow reading log objects
-
-Prevent write, delete, or privilege escalation actions
-
-2️⃣ Wazuh Configuration (AWS S3 Module)
-
-The Wazuh Manager runs in Docker and pulls CloudTrail logs directly from the S3 bucket.
-
-Configuration File:
-wazuh/ossec.conf
-
-Relevant configuration snippet:
-
+**File: `ossec.conf`**
+```xml
 <wodle name="aws-s3">
   <disabled>no</disabled>
   <interval>10m</interval>
   <run_on_start>yes</run_on_start>
   <skip_on_error>yes</skip_on_error>
-
   <bucket type="cloudtrail">
     <name><YOUR_BUCKET_NAME></name>
+    <access_key><HIDDEN></access_key>
+    <secret_key><HIDDEN></secret_key>
     <regions>us-east-1</regions>
   </bucket>
 </wodle>
+```
 
-⚔️ Attack Simulation & Detection
+---
 
-To validate the SOC pipeline, multiple real-world attack scenarios were simulated against the AWS environment.
+## ⚔️ Attack Simulation & Detection
+To validate the detection pipeline, I executed four specific "Real World" attack scenarios against the AWS environment.
 
-🚨 Simulated Threat Scenarios
-Attack Scenario	AWS Event Name	Wazuh Rule ID	Severity	Description
-Identity Attack	ConsoleLogin (Failure)	80200	Medium	Multiple failed AWS Console login attempts
-Data Exposure	PutBucketPublicAccessBlock	80202	High	Attempt to remove S3 Block Public Access
-Shadow IT / Crypto Mining	RunInstances	80301	Medium	Unauthorized EC2 instance launch
-Defense Evasion	StopLogging	80202	Critical	Attempt to disable CloudTrail
-📸 Evidence of Detection
-📊 Threat Hunting Dashboard
+| Attack Scenario | AWS Event Name | Wazuh Rule ID | Severity | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Identity Attack** | `ConsoleLogin` (Failure) | **80200** | Medium | Simulated a Brute Force attack by attempting to login with incorrect credentials multiple times. |
+| **Data Exposure** | `PutBucketPublicAccessBlock` | **80202** | High | Detected an attempt to remove "Block Public Access" settings from a sensitive S3 bucket. |
+| **Shadow IT / Mining** | `RunInstances` | **80301** | Medium | Detected the unauthorized launch of an EC2 instance (common tactic for crypto-jacking). |
+| **Defense Evasion** | `StopLogging` | **80202** | Critical | Detected an adversary attempting to blind the SOC by turning off CloudTrail logging. |
 
-Custom dashboards were created to visualize AWS alert categories and severity.
+---
 
-Screenshot location:
+## 📸 Evidence of Detection
 
-screenshots/dashboard.png
+### Dashboard View: Threat Hunting
+*Below is the custom visualization built to track AWS specific alert groups.*
 
-🔍 Log Analysis: Console Login Failure
+![AWS Dashboard Screenshot](./images/aws-dashboard.png)
+*(Note: Replace this line with your actual screenshot of the Pie Chart)*
 
-Drill-down analysis of failed AWS Console login attempts detected by Wazuh.
+### Log Analysis: Console Login Failure
+*Drilling down into the specific Brute Force attempt logs.*
 
-Screenshot location:
+![Console Login Failure](./images/console-failure.png)
+*(Note: Replace this line with your screenshot of the specific log entry)*
 
-screenshots/console-login-failure.png
+---
 
-🔧 Incident Response Playbook
-🚨 Account Compromise — Rule ID: 80200
+## 🔧 Incident Response Playbook
+If these alerts trigger in a production environment, the following remediation steps are taken:
 
-Lock the affected IAM user
+1.  **For Account Compromise (Rule 80200):**
+    * Lock the IAM User account immediately.
+    * Rotate Access Keys and force a password reset.
+    * Enable MFA if not already enforced.
 
-Rotate access keys immediately
+2.  **For Unauthorized Compute (Rule 80301):**
+    * Terminate the unauthorized EC2 instance via CLI.
+    * Review Security Group rules for any backend doors created.
 
-Force password reset
-
-Enforce MFA
-
-🖥️ Unauthorized Compute Usage — Rule ID: 80301
-
-Terminate the unauthorized EC2 instance
-
-Review Security Group rules for exposure
-
-Audit CloudTrail for additional launches
-
-🛑 Logging Tampering / Defense Evasion — Rule ID: 80202
-
-Re-enable CloudTrail immediately
-
-Audit the logging gap window
-
-Investigate lateral movement or data exfiltration
-
-🎯 Key Takeaways
-
-End-to-end AWS CloudTrail → Wazuh detection pipeline
-
-Least-privilege IAM implementation
-
-Realistic adversary simulation
-
-SOC-ready incident response workflows
-
-🚀 Future Enhancements
-
-MITRE ATT&CK technique mapping
-
-Automated remediation using Lambda
-
-GuardDuty + Wazuh correlation
-
-Detection-as-code versioning
+3.  **For Logging Tampering (Rule 80202):**
+    * Re-enable CloudTrail immediately.
+    * Audit the specific time window (from Stop to Start) for lateral movement or data exfiltration.
