@@ -8,8 +8,6 @@ The objective is to monitor AWS cloud infrastructure for:
 - Unauthorized resource usage  
 - Defense evasion attempts  
 
-All detections are performed in near real-time using centralized log ingestion and visualization.
-
 ---
 
 ## 🏗️ Architecture
@@ -26,9 +24,7 @@ All detections are performed in near real-time using centralized log ingestion a
 
 ### 1️⃣ Least Privilege IAM Policy
 
-To follow security best practices, **no admin credentials** were used.
-
-A dedicated IAM user named **`wazuh-log-collector`** was created with **read-only access** to the CloudTrail S3 bucket.
+A dedicated IAM user **`wazuh-log-collector`** was created with read-only access to the CloudTrail S3 bucket.
 
 #### IAM Policy: `Read_WazuhS3Bucket`
 
