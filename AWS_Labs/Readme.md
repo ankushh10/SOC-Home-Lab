@@ -73,16 +73,14 @@ To validate the detection pipeline, I executed four specific "Real World" attack
 ## 📸 Evidence of Detection
 
 ### Dashboard View: Threat Hunting
-*Below is the custom visualization built to track AWS specific alert groups.*
 
 ![AWS Dashboard Screenshot](./images/aws-dashboard.png)
-*(Note: Replace this line with your actual screenshot of the Pie Chart)*
+
 
 ### Log Analysis: Console Login Failure
-*Drilling down into the specific Brute Force attempt logs.*
+
 
 ![Console Login Failure](./images/console-failure.png)
-*(Note: Replace this line with your screenshot of the specific log entry)*
 
 ---
 
